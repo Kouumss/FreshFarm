@@ -10,20 +10,20 @@ public class AuthService : IAuthService
 
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IPasswordService _passwordService;
-    private readonly IAuthRepository _repository;
+    private readonly IAuthRepository _authRepository;
 
 
       public AuthService(IJwtTokenService jwtTokenService, IAuthRepository authRepository, IPasswordService passwordService)
     {
         _jwtTokenService = jwtTokenService;
-        _repository = authRepository;
+        _authRepository = authRepository;
         _passwordService = passwordService;
     }
 
     public async Task<AuthResult> Login(LoginRequest request)
     {
         // Check if the user exists.
-        var user = await _repository.GetUserByEmailAsync(request.Email) ?? throw new LoginErrorException();
+        var user = await _authRepository.GetUserByEmailAsync(request.Email) ?? throw new LoginErrorException();
        
 
         // Check if password is correct.
@@ -44,9 +44,14 @@ public class AuthService : IAuthService
 
         // Create user 
 
-        var result = UserEntity.Create(request.FirstName, request.LastName, request.Email, passwordHash, passwordSelt);
+        var result = UserEntity.Create(
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            passwordHash,
+            passwordSelt);
 
-        await _repository.AddAsync(result);
+        await _authRepository.AddAsync(result);
 
         return result;
     }

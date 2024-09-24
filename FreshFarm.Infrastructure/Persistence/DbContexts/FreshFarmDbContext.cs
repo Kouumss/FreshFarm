@@ -12,6 +12,7 @@ public class FreshFarmDbContext: DbContext
         }
 
         public DbSet<UserEntity> Users { get; set; }
+        public DbSet<RoleEntity> Roles { get; private set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

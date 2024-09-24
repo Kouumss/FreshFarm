@@ -1,46 +1,32 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace FreshFarm.Infrastructure.Persistence.DbContexts;
-
- public class DbConnectionFactory : IDesignTimeDbContextFactory<FreshFarmDbContext>
+namespace FreshFarm.Infrastructure.Persistence.DbContexts
+{
+    public class DbContextFactory : IDesignTimeDbContextFactory<FreshFarmDbContext>
     {
+        private readonly IConfiguration _configuration;
+
+        public DbContextFactory(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public FreshFarmDbContext CreateDbContext(string[] args)
         {
-            var configurationBuilder = new ConfigurationBuilder();
+            var builder = new DbContextOptionsBuilder<FreshFarmDbContext>();
 
-            var configFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Settings", "appsettings.json");
-
-            // Check if configuration exist
-            if (!File.Exists(configFilePath))
+            var connectionString = _configuration.GetConnectionString("Default");
+            if (string.IsNullOrEmpty(connectionString))
             {
-                throw new FileNotFoundException("Le fichier de configuration 'appsettings.json' est introuvable.", configFilePath);
+                throw new InvalidOperationException("La chaîne de connexion 'Default' est introuvable dans le fichier de configuration.");
             }
 
-            // Loading configuration
-            try
-            {
-                configurationBuilder.AddJsonFile(configFilePath);
-                IConfigurationRoot configurationRoot = configurationBuilder.Build();
+            builder.UseNpgsql(connectionString);
 
-                var builder = new DbContextOptionsBuilder<FreshFarmDbContext>();
-
-                // retrieving the connection string
-                var connectionString = configurationRoot.GetConnectionString("Default");
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    throw new InvalidOperationException("La chaîne de connexion 'Default' est introuvable dans le fichier de configuration.");
-                }
-
-                builder.UseNpgsql(connectionString);
-
-                return new FreshFarmDbContext(builder.Options);
-            }
-            catch (Exception ex)
-            {
-                // Handle the exception
-                throw new InvalidOperationException("Erreur lors de la création du DbContext.", ex);
-            }
+            return new FreshFarmDbContext(builder.Options);
         }
     }
+}

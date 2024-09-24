@@ -1,4 +1,3 @@
-using System;
 using FreshFarm.Domain.Entities;
 
 namespace FreshFarm.Contract.Service.Auth;
