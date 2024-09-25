@@ -1,0 +1,92 @@
+﻿@using FreshFarm.UI.Models.User
+@model IEnumerable<UserViewModel>
+
+<!-- Messages de succès ou d'erreur -->
+<div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;">
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @ViewBag.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+        </div>
+    }
+    
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ViewBag.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+</div>
+
+
+<!-- Table des utilisateurs -->
+<div class="container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.FirstName</td>
+                        <td>@user.LastName</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <a asp-controller="User" asp-action="Edit" asp-route-id="@user.Id" class="btn btn-primary">Modifier</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">Aucun utilisateur trouvé.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Fermer les alertes après 5 secondes avec la barre de chargement
+            $('#notification-container .alert').each(function () {
+                var $alert = $(this);
+                var $loadingBar = $('.loading-bar');
+
+                // Initialiser la largeur de la barre de chargement
+                var width = 100;
+
+                // Afficher la barre de chargement
+                $loadingBar.css('width', width + '%');
+
+                // Diminuer la largeur de la barre toutes les 100 ms
+                var interval = setInterval(function () {
+                    width -= 2; // Réduire la largeur
+                    $loadingBar.css('width', width + '%');
+
+                    // Si la largeur atteint 0, arrêter l'intervalle et fermer l'alerte
+                    if (width <= 0) {
+                        clearInterval(interval);
+                        $alert.alert('close'); // Fermer l'alerte
+                    }
+                }, 100); // Diminuer toutes les 100 ms
+            });
+        });
+    </script>
+}

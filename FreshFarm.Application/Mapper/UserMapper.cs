@@ -1,5 +1,4 @@
-using System;
-using FreshFarm.Contract.DTOs.User;
+using FreshFarm.Domain.Dtos.User;
 using FreshFarm.Domain.Entities;
 
 namespace FreshFarm.Application.Mapper;

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using FreshFarm.Contract.Service.Auth;
+using FreshFarm.Domain.Service.Auth;
 
 namespace FreshFarm.Application.Services.Auth;
 

@@ -1,5 +1,5 @@
 using FreshFarm.Application.Services.Auth.Settings;
-using FreshFarm.Contract.Service.Auth;
+using FreshFarm.Domain.Service.Auth;
 using FreshFarm.Domain.Entities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

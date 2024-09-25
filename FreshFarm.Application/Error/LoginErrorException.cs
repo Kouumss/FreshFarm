@@ -1,5 +1,5 @@
 using System.Net;
-using FreshFarm.Contract.Service.Error;
+using FreshFarm.Domain.Service.Error;
 
 namespace FreshFarm.Application.Error;
 public class LoginErrorException : Exception, IExceptionService

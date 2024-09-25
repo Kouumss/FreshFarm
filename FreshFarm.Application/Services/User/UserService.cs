@@ -1,73 +1,88 @@
 using FreshFarm.Application.Error;
 using FreshFarm.Application.Mapper;
-using FreshFarm.Contract.DTOs.User;
-using FreshFarm.Contract.Service.Auth;
-using FreshFarm.Contract.Service.User;
+using FreshFarm.Domain.Dtos.User;
+using FreshFarm.Domain.Service.Auth;
+using FreshFarm.Domain.Service.User;
 using FreshFarm.Domain.Entities;
 
 namespace FreshFarm.Application.Services.User;
 
 public class UserService : IUserService
 {
+    #region Services
     private readonly IUserRepository _userRepository;
     private readonly IPasswordService _passwordService;
     private readonly UserMapper _userMapper;
 
+    #endregion
 
+    #region Constructor 
     public UserService(IUserRepository userRepository, IPasswordService passwordService, UserMapper userMapper)
     {
         _userRepository = userRepository;
         _passwordService = passwordService;
         _userMapper = userMapper;
     }
+    #endregion
 
-    public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
+    #region Method
+
+    // GET ALL
+    public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync()
     {
-        // Vérifier si l'email existe déjà
-        UserEntity? existingUser = await _userRepository.GetByEmailAsync(createUserDto.Email);
+        var result = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+
+        return result.Select(_userMapper.MapToDto).ToList().AsReadOnly();
+    }
+    // GET BY ID
+    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
+{
+    var userEntity = await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
+
+    UserDto userDto = _userMapper.MapToDto(userEntity);
+    
+    return userDto; 
+}
+
+    // CREATE
+    public async Task<UserDto> CreateUserAsync(UserCreateDto model)
+    {
+        UserEntity? existingUser = await _userRepository.GetByEmailAsync(model.Email);
         if (existingUser is not null)
             throw new InvalidOperationException("Un utilisateur avec cet email existe déjà.");
 
-        // Hachage du mot de passe
-        _passwordService.CreateHashPassword(createUserDto.Password, out byte[] passwordHash, out byte[] passwordSalt);
+        _passwordService.CreateHashPassword(
+            model.Password,
+            out byte[] passwordHash,
+            out byte[] passwordSalt
+            );
 
-        // Mapper le DTO vers l'entité
-        UserEntity user = UserEntity.Create(
-            createUserDto.FirstName,
-            createUserDto.LastName,
-            createUserDto.Email,
+        var user = UserEntity.Create(
+            model.FirstName,
+            model.LastName,
+            model.Email,
             passwordHash,
             passwordSalt
         );
 
         UserEntity createdUser = await _userRepository.AddAsync(user);
-        return _userMapper.MapToDto(createdUser);
+        UserDto userViewModel = new UserDto();
+
+        userViewModel.FirstName = createdUser.FirstName;
+        userViewModel.LastName = createdUser.LastName;
+        userViewModel.Email = createdUser.Email;
+
+        return userViewModel;
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
-    {
-        var user = await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
-        return _userMapper.MapToDto(user);
-    }
-
-
-    public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync()
-    {
-        IReadOnlyList<UserEntity> users = await _userRepository.GetAllAsync() ?? new List<UserEntity>();
-
-        // Map every UserEntity to UserDto
-        var userDtos = users.Select(_userMapper.MapToDto).ToList();
-
-        return userDtos;
-    }
-
-    public async Task UpdateUserAsync(Guid userId, UpdateUserDto updateUserDto)
+    // UPDATE
+    public async Task UpdateUserAsync(Guid userId, UserUpdateDto model)
     {
         var user = await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
 
-        string firstName = updateUserDto.FirstName ?? user.FirstName;
-        string lastName = updateUserDto.LastName ?? user.LastName;
-        string email = updateUserDto.Email ?? user.Email;
+        string firstName = model.FirstName ?? user.FirstName;
+        string lastName = model.LastName ?? user.LastName;
+        string email = model.Email ?? user.Email;
 
         user.UpdateUserDetails(firstName, lastName, email);
 
@@ -83,6 +98,7 @@ public class UserService : IUserService
         await _userRepository.RemoveAsync(userId);
     }
 
+    // PASSWORD
     public async Task UpdatePasswordAsync(Guid userId, UpdatePasswordDto updatePasswordDto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
@@ -101,17 +117,6 @@ public class UserService : IUserService
 
         await _userRepository.UpdateAsync(user);
     }
-
-    private UserDto MapToDto(UserEntity user)
-    {
-        return new UserDto
-        {
-            Id = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            // Mapper d'autres propriétés si nécessaire
-        };
-    }
+    #endregion
 }
 

@@ -1,7 +1,15 @@
+using FreshFarm.Application;
+using FreshFarm.Infrastructure.Persistence.DbContexts;
+using FreshFarm.UI.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddApplication(builder.Configuration);
+
+builder.Services.AddScoped<IUserUiService, UserUiService>();
 
 var app = builder.Build();
 
@@ -23,5 +31,12 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FreshFarmDbContext>();
+    await dbContext.InitializeDataAsync();
+}
 
 app.Run();

@@ -1,6 +1,6 @@
 using FreshFarm.Application.Error;
-using FreshFarm.Contract.DTOs.Auth;
-using FreshFarm.Contract.Service.Auth;
+using FreshFarm.Domain.Dtos.Auth;
+using FreshFarm.Domain.Service.Auth;
 using FreshFarm.Domain.Entities;
 
 namespace FreshFarm.Application.Services.Auth;

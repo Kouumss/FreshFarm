@@ -1,4 +1,4 @@
-using FreshFarm.Contract.Service.Auth;
+using FreshFarm.Domain.Service.Auth;
 using FreshFarm.Domain.Entities;
 using FreshFarm.Infrastructure.Persistence.DbContexts;
 using Microsoft.EntityFrameworkCore;
