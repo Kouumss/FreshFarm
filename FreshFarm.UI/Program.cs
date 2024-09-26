@@ -1,6 +1,5 @@
 using FreshFarm.Application;
 using FreshFarm.Infrastructure.Persistence.DbContexts;
-using FreshFarm.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,8 +7,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddApplication(builder.Configuration);
-
-builder.Services.AddScoped<IUserUiService, UserUiService>();
 
 var app = builder.Build();
 

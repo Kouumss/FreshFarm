@@ -4,7 +4,10 @@ namespace FreshFarm.Domain.Dtos.User;
 
 
 public class UserUpdateDto
-{
+
+{   
+    public Guid Id { get; set; } 
+
     [Display(Name = "Prénom")]
     public string? FirstName { get; set; }
 

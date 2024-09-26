@@ -8,6 +8,10 @@
     <PackageReference Include="jQuery" Version="3.7.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot/lib/" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>

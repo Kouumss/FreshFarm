@@ -1,12 +1,13 @@
 using FreshFarm.Domain.Dtos.User;
+using FreshFarm.Domain.Entities;
 
 namespace FreshFarm.Domain.Service.User;
 public interface IUserService
 {
-    Task<UserDto> CreateUserAsync(UserCreateDto model);
-    Task<UserDto?> GetUserByIdAsync(Guid userId);
-    Task<IReadOnlyList<UserDto>> GetAllUsersAsync();
+    Task<UserEntity> CreateUserAsync(UserCreateDto model);
+    Task<UserEntity?> GetUserByIdAsync(Guid userId);
+    Task<IReadOnlyList<UserEntity>> GetAllUsersAsync();
     Task UpdateUserAsync(Guid userId, UserUpdateDto model);
-    Task RemoveUserAsync(Guid userId);
+    Task DeleteUserAsync(Guid userId);
 }
 

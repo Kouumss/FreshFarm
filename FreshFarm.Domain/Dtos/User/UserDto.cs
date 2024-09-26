@@ -1,9 +1,9 @@
 namespace  FreshFarm.Domain.Dtos.User;
 
-public class UserDto
+public record UserDto
 {
-    public Guid Id { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string Email { get; set; }
+    public Guid Id { get; init; }
+    public string FirstName { get; init; }
+    public string LastName { get; init; }
+    public string Email { get; init; }
 }

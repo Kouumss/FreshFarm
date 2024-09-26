@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FreshFarm.Infrastructure.Migrations
 {
     [DbContext(typeof(FreshFarmDbContext))]
-    [Migration("20240925115712_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240925230311_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,332 +1,110 @@
 using FreshFarm.Application.Error;
 using FreshFarm.Domain.Dtos.User;
-using FreshFarm.UI.Models.User;
-using FreshFarm.UI.Services;
+using FreshFarm.Domain.Service.User;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FreshFarm.UI.Controllers
+namespace FreshFarm.UI.Controllers;
+
+public class UserController : Controller
 {
-    public class UserController : Controller
+    private readonly IUserService _userService;
+
+    public UserController(IUserService userService)
     {
-        #region Services 
-        private readonly IUserUiService _userUiService;
+        _userService = userService;
+    }
 
-        #endregion
+    // GET ALL
+    public async Task<IActionResult> Index()
+    {
+        var users = await _userService.GetAllUsersAsync();
+        return View(users);
+    }
 
-        #region Constructor
-        public UserController(IUserUiService userUiService)
-        {
-            _userUiService = userUiService;
-        }
-        #endregion
+    // GET BY ID
+    public async Task<IActionResult> Details(Guid id)
+    {
+        var user = await _userService.GetUserByIdAsync(id);
 
-        #region Method
+        if (user is null)
+            return NotFound();
 
-        // GET ALL
-        [HttpGet]
-        [Route("User/GetAll")]
-        public async Task<ActionResult> GetAllUsers()
-        {
-            try
-            {
-                var userViewModels = await _userUiService.GetAllUsersAsync();
+        return View(user);
+    }
 
-                if (userViewModels is null || !userViewModels.Any())
-                {
-                    ViewBag.ErrorMessage = "Aucun utilisateur trouvé.";
-                    return View(userViewModels);
-                }
+    // GET: User/Create
+    public IActionResult Create()
+    {
+        return View();
+    }
 
-                // Affichez un message de succès si un utilisateur a été ajouté ou modifié
-                ViewBag.SuccessMessage = TempData["SuccessMessage"];
-                return View(userViewModels);
-            }
-            catch (Exception ex)
-            {
-                ViewBag.ErrorMessage = $"Une erreur est survenue : {ex.Message}";
-                return View("Error", ex.Message);
-            }
-        }
-
-        // GET BY ID
-        [HttpGet]
-        [Route("User/Details/{id}")]
-        public async Task<ActionResult> GetUserById(Guid id)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(UserCreateDto model)
+    {
+        if (ModelState.IsValid)
         {
             try
             {
-                var userDto = await _userUiService.GetUserByIdAsync(id);
-                if (userDto is null)
-                {
-                    ViewBag.ErrorMessage = "Utilisateur non trouvé.";
-                    return NotFound();
-                }
-
-                var userViewModel = new UserViewModel
-                {
-                    Id = userDto.Id,
-                    FirstName = userDto.FirstName,
-                    LastName = userDto.LastName,
-                    Email = userDto.Email
-                };
-
-                return View(userViewModel);
+                var user = await _userService.CreateUserAsync(model);
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                ViewBag.ErrorMessage = $"Une erreur est survenue : {ex.Message}";
-                return View("Error", ex.Message);
+                ModelState.AddModelError("Email", ex.Message);
             }
         }
+        return View(model);
+    }
 
-        // EDIT
-        [HttpGet]
-        [Route("User/Edit/{id}")]
-        public async Task<ActionResult> Edit(Guid id)
+    // GET: User/Edit/5
+    public async Task<IActionResult> Edit(Guid id)
+    {
+        var user = await _userService.GetUserByIdAsync(id);
+        if (user is null)
+            return NotFound();
+
+        var model = new UserUpdateDto
+        {   Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Update(Guid id, UserUpdateDto model)
+    {
+        if (ModelState.IsValid)
         {
-            var userDto = await _userUiService.GetUserByIdAsync(id);
-
-            if (userDto is null)
+            try
             {
-                ViewBag.ErrorMessage = "Utilisateur non trouvé.";
+                await _userService.UpdateUserAsync(id, model);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (NotFoundException)
+            {
                 return NotFound();
             }
-
-            var userUpdateModel = new UserUpdateModel
-            {
-                Id = userDto.Id,
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email
-            };
-
-            return View(userUpdateModel);
         }
+        return View(model);
+    }
 
-        // UPDATE
-        [HttpPost]
-        [Route("User/Update")]
-        public async Task<ActionResult> UpdateUser(Guid id, UserUpdateDto userUpdateModel)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
         {
-            if (!ModelState.IsValid)
-            {
-                ViewBag.ErrorMessage = "Veuillez corriger les erreurs dans le formulaire.";
-                return View(userUpdateModel);
-            }
-
-            try
-            {
-                await _userUiService.UpdateUserAsync(id, userUpdateModel);
-                TempData["SuccessMessage"] = "L'utilisateur a été mis à jour avec succès.";
-                return RedirectToAction("GetAllUsers");
-            }
-            catch (NotFoundException ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                ViewBag.ErrorMessage = "L'utilisateur à mettre à jour n'a pas été trouvé.";
-                return View(userUpdateModel);
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Une erreur est survenue : {ex.Message}");
-                ViewBag.ErrorMessage = "Une erreur s'est produite lors de la mise à jour de l'utilisateur.";
-                return View(userUpdateModel);
-            }
+            await _userService.DeleteUserAsync(id);
+            return RedirectToAction(nameof(Index));
         }
-
-        // DELETE
-        [HttpPost]
-        [Route("User/Delete/{id}")]
-        public async Task<ActionResult> DeleteUser(Guid id)
+        catch (NotFoundException)
         {
-            try
-            {
-                var userDto = await _userUiService.GetUserByIdAsync(id);
-
-                if (userDto is null)
-                {
-                    ViewBag.ErrorMessage = "Utilisateur non trouvé.";
-                    return NotFound();
-                }
-
-                await _userUiService.DeleteUserAsync(id);
-                TempData["SuccessMessage"] = "L'utilisateur a été supprimé avec succès.";
-                return RedirectToAction("GetAllUsers");
-            }
-            catch (NotFoundException ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                ViewBag.ErrorMessage = "L'utilisateur à supprimer n'a pas été trouvé.";
-                return RedirectToAction("GetAllUsers");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Une erreur est survenue : {ex.Message}");
-                ViewBag.ErrorMessage = "Une erreur s'est produite lors de la suppression de l'utilisateur.";
-                return RedirectToAction("GetAllUsers");
-            }
+            return NotFound();
         }
-        #endregion
     }
 }
-
-
-
-// using FreshFarm.Application.Error;
-// using FreshFarm.Domain.Dtos.User;
-// using FreshFarm.Domain.Service.User;
-// using FreshFarm.UI.Models.User;
-// using FreshFarm.UI.Services; // Importez le service UI
-// using Microsoft.AspNetCore.Mvc;
-
-// namespace FreshFarm.UI.Controllers
-// {
-
-
-//     public class UserController : Controller
-//     {
-//         #region Services 
-//         private readonly IUserUiService _userUiService;
-
-//         #endregion
-
-//         #region Constructor
-//         public UserController(IUserUiService userUiService)
-//         {
-//             _userUiService = userUiService;
-//         }
-//         #endregion
-
-//         #region Method
-
-
-//         // GET ALL
-
-//         [HttpGet]
-//         [Route("User/GetAll")]
-//         public async Task<ActionResult> GetAllUsers()
-//         {
-//             try
-//             {
-//                 var userViewModels = await _userUiService.GetAllUsersAsync();
-
-//                 if (userViewModels is null || !userViewModels.Any())
-//                     return NotFound();
-
-//                 return View(userViewModels);
-//             }
-//             catch (Exception ex)
-//             {
-//                 return View("Error", ex.Message);
-//             }
-//         }
-//         // GET BY ID
-
-//         [HttpGet]
-//         [Route("User/Details/{id}")]
-//         public async Task<ActionResult> GetUserById(Guid id)
-//         {
-//             try
-//             {
-//                 var userDto = await _userUiService.GetUserByIdAsync(id);
-//                 if (userDto is null)
-//                     return NotFound();
-
-//                 var userViewModel = new UserViewModel
-//                 {
-//                     Id = userDto.Id,
-//                     FirstName = userDto.FirstName,
-//                     LastName = userDto.LastName,
-//                     Email = userDto.Email
-//                 };
-
-//                 return View(userViewModel);
-//             }
-//             catch (Exception ex)
-//             {
-//                 return View("Error", ex.Message);
-//             }
-//         }
-
-//         // EDIT
-
-//         [HttpGet]
-//         [Route("User/Edit/{id}")]
-//         public async Task<ActionResult> Edit(Guid id)
-//         {
-//             var userDto = await _userUiService.GetUserByIdAsync(id);
-
-//             if (userDto is null)
-//                 return NotFound();
-
-//             var userUpdateModel = new UserUpdateModel
-//             {
-//                 Id = userDto.Id,
-//                 FirstName = userDto.FirstName,
-//                 LastName = userDto.LastName,
-//                 Email = userDto.Email
-//             };
-
-//             return View(userUpdateModel);
-//         }
-
-//         // UPDATE
-
-//         [HttpPost]
-//         [Route("User/Update")]
-//         public async Task<ActionResult> UpdateUser(Guid id, UserUpdateDto userUpdateModel)
-//         {
-//             if (!ModelState.IsValid)
-//                 return View(userUpdateModel);
-
-//             try
-//             {
-//                 await _userUiService.UpdateUserAsync(id, userUpdateModel);
-
-//                 TempData["SuccessMessage"] = "L'utilisateur a été mis à jour avec succès.";
-//                 return RedirectToAction("GetAllUsers");
-//             }
-//             catch (NotFoundException ex)
-//             {
-//                 ModelState.AddModelError(string.Empty, ex.Message);
-//                 return View(userUpdateModel);
-//             }
-//             catch (Exception ex)
-//             {
-//                 ModelState.AddModelError(string.Empty, $"Une erreur est survenue : {ex.Message}");
-//                 return View(userUpdateModel);
-//             }
-//         }
-
-//         // DELETE
-
-//         [HttpPost]
-//         [Route("User/Delete/{id}")]
-//         public async Task<ActionResult> DeleteUser(Guid id)
-//         {
-//             try
-//             {
-//                 var userDto = await _userUiService.GetUserByIdAsync(id);
-
-//                 if (userDto is null)
-//                     return NotFound();
-
-//                 await _userUiService.DeleteUserAsync(id);
-
-//                 TempData["SuccessMessage"] = "L'utilisateur a été supprimé avec succès.";
-//                 return RedirectToAction("GetAllUsers");
-//             }
-//             catch (NotFoundException ex)
-//             {
-//                 ModelState.AddModelError(string.Empty, ex.Message);
-//                 return RedirectToAction("GetAllUsers");
-//             }
-//             catch (Exception ex)
-//             {
-//                 ModelState.AddModelError(string.Empty, $"Une erreur est survenue : {ex.Message}");
-//                 return RedirectToAction("GetAllUsers");
-//             }
-//         }
-//         #endregion
-//     }
-// }

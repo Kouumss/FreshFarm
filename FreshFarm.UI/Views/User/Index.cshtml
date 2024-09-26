@@ -1,0 +1,65 @@
+﻿@using FreshFarm.Domain.Entities
+@model IEnumerable<UserEntity>
+
+<!-- Table des utilisateurs -->
+<div class="container">
+    <h1>Liste des Utilisateurs</h1>
+
+    <!-- Bouton Créer -->
+    <div class="mb-3">
+        <a asp-controller="User" asp-action="Create" class="btn btn-success">Créer un Nouvel Utilisateur</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.FirstName</td>
+                        <td>@user.LastName</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <a asp-controller="User" asp-action="Edit" asp-route-id="@user.Id"
+                                class="btn btn-primary">Modifier</a>
+                            <form asp-controller="User" asp-action="Delete" asp-route-id="@user.Id" method="post"
+                                style="display:inline;">
+                                <button type="submit" class="btn btn-danger">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center">Aucun utilisateur trouvé.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var successMessage = '@TempData["SuccessMessage"]';
+            if (successMessage) {
+                toastr.success(successMessage, 'Succès');
+            }
+        });
+    </script>
+}

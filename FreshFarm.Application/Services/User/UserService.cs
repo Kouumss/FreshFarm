@@ -1,5 +1,4 @@
 using FreshFarm.Application.Error;
-using FreshFarm.Application.Mapper;
 using FreshFarm.Domain.Dtos.User;
 using FreshFarm.Domain.Service.Auth;
 using FreshFarm.Domain.Service.User;
@@ -12,40 +11,33 @@ public class UserService : IUserService
     #region Services
     private readonly IUserRepository _userRepository;
     private readonly IPasswordService _passwordService;
-    private readonly UserMapper _userMapper;
 
     #endregion
 
     #region Constructor 
-    public UserService(IUserRepository userRepository, IPasswordService passwordService, UserMapper userMapper)
+    public UserService(IUserRepository userRepository, IPasswordService passwordService)
     {
         _userRepository = userRepository;
         _passwordService = passwordService;
-        _userMapper = userMapper;
     }
     #endregion
 
     #region Method
 
     // GET ALL
-    public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync()
+    public async Task<IReadOnlyList<UserEntity>> GetAllUsersAsync()
     {
-        var result = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
-
-        return result.Select(_userMapper.MapToDto).ToList().AsReadOnly();
+        return await _userRepository.GetAllAsync();
     }
-    // GET BY ID
-    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
-{
-    var userEntity = await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
 
-    UserDto userDto = _userMapper.MapToDto(userEntity);
-    
-    return userDto; 
-}
+    // GET BY ID
+    public async Task<UserEntity?> GetUserByIdAsync(Guid userId)
+    {
+        return await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
+    }
 
     // CREATE
-    public async Task<UserDto> CreateUserAsync(UserCreateDto model)
+    public async Task<UserEntity> CreateUserAsync(UserCreateDto model)
     {
         UserEntity? existingUser = await _userRepository.GetByEmailAsync(model.Email);
         if (existingUser is not null)
@@ -55,7 +47,7 @@ public class UserService : IUserService
             model.Password,
             out byte[] passwordHash,
             out byte[] passwordSalt
-            );
+        );
 
         var user = UserEntity.Create(
             model.FirstName,
@@ -65,14 +57,7 @@ public class UserService : IUserService
             passwordSalt
         );
 
-        UserEntity createdUser = await _userRepository.AddAsync(user);
-        UserDto userViewModel = new UserDto();
-
-        userViewModel.FirstName = createdUser.FirstName;
-        userViewModel.LastName = createdUser.LastName;
-        userViewModel.Email = createdUser.Email;
-
-        return userViewModel;
+        return await _userRepository.AddAsync(user);
     }
 
     // UPDATE
@@ -88,35 +73,12 @@ public class UserService : IUserService
 
         await _userRepository.UpdateAsync(user);
     }
-
-    public async Task RemoveUserAsync(Guid userId)
+    // DELETE
+    public async Task DeleteUserAsync(Guid userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user is null)
-            throw new NotFoundException("Utilisateur non trouvé.");
-
+        var user = await _userRepository.GetByIdAsync(userId) ?? throw new NotFoundException("Utilisateur non trouvé.");
         await _userRepository.RemoveAsync(userId);
     }
 
-    // PASSWORD
-    public async Task UpdatePasswordAsync(Guid userId, UpdatePasswordDto updatePasswordDto)
-    {
-        var user = await _userRepository.GetByIdAsync(userId);
-
-        if (user is null)
-            throw new NotFoundException("Utilisateur non trouvé.");
-
-        // Check validation of current password
-        if (!_passwordService.VerifyPassword(updatePasswordDto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
-            throw new InvalidOperationException("Le mot de passe actuel est incorrect.");
-
-        // Hash new password
-        _passwordService.CreateHashPassword(updatePasswordDto.NewPassword, out byte[] newPasswordHash, out byte[] newPasswordSalt);
-
-        user.UpdatePassword(newPasswordHash, newPasswordSalt);
-
-        await _userRepository.UpdateAsync(user);
-    }
     #endregion
 }
-
